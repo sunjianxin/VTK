@@ -908,7 +908,7 @@ protected:
 
   // A temporary list of props used for culling, and traversal
   // of all props when rendering
-  vtkProp** PropArray;
+  vtkProp** PropArray; // abstract superclass for all actors, volumes and annotations
   int PropArrayCount;
 
   // Indicates if the renderer should receive events from an interactor.

@@ -36,6 +36,20 @@
 #include "vtkDeprecation.h"                // For VTK_DEPRECATED_IN_9_0_0
 #include "vtkObject.h"
 
+
+// #include "vtkDIYUtilities.h"
+// #include "vtk_diy2.h" // must include this before any diy header
+// #include VTK_DIY2(diy/assigner.hpp)
+// #include VTK_DIY2(diy/link.hpp)
+// #include VTK_DIY2(diy/master.hpp)
+// #include VTK_DIY2(diy/mpi.hpp)
+
+// #include "/Users/jianxinsun/research/intern/mfa/include/diy/include/diy/master.hpp"
+// #include "/Users/jianxinsun/research/intern/VTK/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/assigner.hpp"
+// #include "/Users/jianxinsun/research/intern/VTK/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/link.hpp"
+// #include "/Users/jianxinsun/research/intern/VTK/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/master.hpp"
+// #include "/Users/jianxinsun/research/intern/VTK/ThirdParty/diy2/vtkdiy2/include/vtkdiy2/mpi.hpp"
+
 class vtkAbstractArray;
 class vtkAlgorithmInternals;
 class vtkAlgorithmOutput;
@@ -404,6 +418,10 @@ public:
    */
   virtual void SetInputConnection(int port, vtkAlgorithmOutput* input);
   virtual void SetInputConnection(vtkAlgorithmOutput* input);
+  
+  // void SetMFAInputConnection(diy::Master& master);
+  void SetMFAInputConnection(void* master, bool useMFA);
+  // void SetMFAInputConnection();
   ///@}
 
   ///@{
@@ -705,6 +723,10 @@ public:
   vtkGetObjectMacro(ProgressObserver, vtkProgressObserver);
   ///@}
 
+  int GetMfaTest();
+  void* GetMfaBlock();
+  bool GetUseMfa();
+
 protected:
   vtkAlgorithm();
   ~vtkAlgorithm() override;
@@ -897,6 +919,10 @@ private:
     vtkAlgorithm* producer, int producerPort, vtkAlgorithm* consumer, int consumerPort);
   static void ConnectionRemoveAllInput(vtkAlgorithm* consumer, int port);
   static void ConnectionRemoveAllOutput(vtkAlgorithm* producer, int port);
+
+  void* MfaBlock;
+  bool useMFA = false;
+  int MfaTest;
 
 private:
   vtkAlgorithm(const vtkAlgorithm&) = delete;

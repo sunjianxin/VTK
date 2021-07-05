@@ -756,7 +756,7 @@ protected:
 
   virtual void DoStereoRender();
 
-  vtkRendererCollection* Renderers;
+  vtkRendererCollection* Renderers; // an ordered list of renderers
   vtkNew<vtkRenderTimerLog> RenderTimer;
   vtkTypeBool Borders;
   vtkTypeBool FullScreen;

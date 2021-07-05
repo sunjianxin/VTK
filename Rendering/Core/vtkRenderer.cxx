@@ -251,6 +251,10 @@ void vtkRenderer::ReleaseGraphicsResources(vtkWindow* renWin)
 // Concrete render method.
 void vtkRenderer::Render()
 {
+  // cerr << "in vtkRenderer Render function" << endl;
+  double camPosX, camPosY, camPosZ;
+  this->GetActiveCamera()->GetPosition(camPosX, camPosY, camPosZ);
+  // cerr << "Cam Pos: " << camPosX << "; " << camPosY << "; " << camPosZ << endl;
   vtkRenderTimerLog* timer = this->RenderWindow->GetRenderTimer();
   VTK_SCOPED_RENDER_EVENT(
     "vtkRenderer::Render this=@" << std::hex << this << " Layer=" << std::dec << this->Layer,
@@ -341,6 +345,7 @@ void vtkRenderer::Render()
   // the props that need to be rendered into an image.
   // Fill these in later (in AllocateTime) - get a
   // count of them there too
+  // cerr << "GetNumberOfItems" << this->Props->GetNumberOfItems() << endl ; // = 1 
   if (this->Props->GetNumberOfItems() > 0)
   {
     this->PropArray = new vtkProp*[this->Props->GetNumberOfItems()];
@@ -352,10 +357,12 @@ void vtkRenderer::Render()
 
   this->PropArrayCount = 0;
   vtkCollectionSimpleIterator pit;
+  int dcount = 0;
   for (this->Props->InitTraversal(pit); (aProp = this->Props->GetNextProp(pit));)
   {
     if (aProp->GetVisibility())
     {
+      // cerr << "initialized proarray" << endl;
       this->PropArray[this->PropArrayCount++] = aProp;
     }
   }
@@ -438,6 +445,7 @@ void vtkRenderer::Render()
 //------------------------------------------------------------------------------
 void vtkRenderer::DeviceRenderOpaqueGeometry(vtkFrameBufferObjectBase* vtkNotUsed(fbo))
 {
+  // cerr << "call DeviceRenderOpaqueGeometry in vtkRenderer" << endl;
   this->UpdateOpaquePolygonalGeometry();
 }
 
@@ -735,10 +743,12 @@ int vtkRenderer::UpdateTranslucentPolygonalGeometry()
 //------------------------------------------------------------------------------
 int vtkRenderer::UpdateOpaquePolygonalGeometry()
 {
+  // cerr << "in UpdateOpaquePolygonealGeometry" << endl;
+  // cerr << "this->PropArrayCount" << this->PropArrayCount << endl;
   int result = 0;
   for (int i = 0; i < this->PropArrayCount; i++)
   {
-    result += this->PropArray[i]->RenderOpaqueGeometry(this);
+    result += this->PropArray[i]->RenderOpaqueGeometry(this); // PropArray[i] is vtkProp type
   }
   this->NumberOfPropsRendered += result;
   return result;

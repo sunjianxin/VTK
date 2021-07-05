@@ -1056,7 +1056,7 @@ int vtkFixedPointVolumeRayCastMapper::PerImageInitialization(vtkRenderer* ren, v
   // on the previous one and the previous render time. Don't let
   // the adjusted image sample distance be less than the minimum image sample
   // distance or more than the maximum image sample distance.
-  if (this->AutoAdjustSampleDistances)
+  if (this->AutoAdjustSampleDistances) // true
   {
     this->ImageSampleDistance =
       this->ComputeRequiredImageSampleDistance(vol->GetAllocatedRenderTime(), ren, vol);
@@ -1080,7 +1080,7 @@ int vtkFixedPointVolumeRayCastMapper::PerImageInitialization(vtkRenderer* ren, v
   this->RayCastImage->SetImageViewportSize(static_cast<int>(width / this->ImageSampleDistance),
     static_cast<int>(height / this->ImageSampleDistance));
 
-  if (multiRender)
+  if (multiRender) // false
   {
     this->UpdateCroppingRegions();
     this->ComputeMatrices(inputOrigin, inputSpacing, inputExtent, ren, vol);
@@ -1138,7 +1138,7 @@ void vtkFixedPointVolumeRayCastMapper::PerVolumeInitialization(vtkRenderer* ren,
   this->Volume = vol;
 
   // Adjust the sample spacing if necessary
-  if (this->LockSampleDistanceToInputSpacing)
+  if (this->LockSampleDistanceToInputSpacing) // false
   {
     double const dist = this->SpacingAdjustedSampleDistance(inputSpacing, inputExtent);
 
@@ -1215,6 +1215,75 @@ void vtkFixedPointVolumeRayCastMapper::RenderSubVolume()
   this->Threader->SetSingleMethod(FixedPointVolumeRayCastMapper_CastRays, (void*)this);
   this->Threader->SingleMethodExecute();
   this->InvokeEvent(vtkCommand::VolumeMapperRenderEndEvent, nullptr);
+  
+  int imageInUseSize[2];  // size of image actually used in pixel
+  int imageMemorySize[2]; // always power of 2, size in pixel, >= imageInUseSize
+  int imageViewportSize[2]; // size of viewport in pixel, render window size
+  int imageOrigin[2];
+  int dim[3];
+  float shift[4];
+  float scale[4];
+
+
+  this->GetRayCastImage()->GetImageInUseSize(imageInUseSize);
+  this->GetRayCastImage()->GetImageMemorySize(imageMemorySize);
+  this->GetRayCastImage()->GetImageViewportSize(imageViewportSize);
+  this->GetRayCastImage()->GetImageOrigin(imageOrigin);
+  vtkImageData* imData = vtkImageData::SafeDownCast(this->GetInput());
+  // vtkRectilinearGrid* rGrid = vtkRectilinearGrid::SafeDownCast(this->GetInput());
+
+
+  // cerr << "GetImageInUseSize: " << imageInUseSize[0] << "; "<< imageInUseSize[1] << endl;
+  // cerr << "GetImageMemorySize: " << imageMemorySize[0] << "; "<< imageMemorySize[1] << endl;
+  // cerr << "GetImageViewportSize: " << imageViewportSize[0] << "; "<< imageViewportSize[1] << endl;
+  // cerr << "GetImageOrigin: " << imageOrigin[0] << "; "<< imageOrigin[1] << endl;
+
+  if (imData)
+  {
+    // cerr << "imData has value" << endl;
+    imData->GetDimensions(dim);
+  }
+  // else if (rGrid)
+  // {
+  //   rGrid->GetDimensions(dim);
+  // }
+  this->GetTableShift(shift); // all 0
+  this->GetTableScale(scale); // all 1
+  
+  // cerr << "dim: " << dim[0] << "; " << dim[1] << "; " << dim[2] << endl;
+  // cerr << "shift: " << shift[0] << "; " << shift[1] << "; " << shift[2] << "; " << shift[3] << endl;
+  // cerr << "scale: " << scale[0] << "; " << scale[1] << "; " << scale[2] << "; " << scale[3] << endl;
+
+  int* rowBounds = this->GetRowBounds(); // row 1 bounds: from rowBounds[0]~rowBounds[1]; row 2 bounds: from rowBounds[2]~rowBounds[3]... rows is ImageInUseSize[1]
+  // cerr << "rowBounds: " << *rowBounds << endl;
+  unsigned short* image = this->GetRayCastImage()->GetImage();
+  vtkRenderWindow* renWin = this->GetRenderWindow();
+  int components = 1;
+  if (imData)
+  {
+    components = imData->GetNumberOfScalarComponents();
+  }
+  // else if (rGrid)
+  // {
+  //   components = rGrid->GetNumberOfScalarComponents();
+  // }
+  // cerr << "components: " << components << endl;
+  int cropping = (this->GetCropping() && this->GetCroppingRegionFlags() != 0x2000); // 0
+  // cerr << "cropping: " << cropping << endl;
+
+  unsigned short* colorTable[4];
+  unsigned short* scalarOpacityTable[4];
+  int c;
+  for (c = 0; c < 4; c++)
+  {
+    colorTable[c] = this->GetColorTable(c); // colorTable[c] is ptr to unsigned short array of 32768(bianry: 1+0*15) x 3 size
+    (void)(colorTable[c]);
+    scalarOpacityTable[c] = this->GetScalarOpacityTable(c); // scalarOpacityTable[c] is ptr to unsigned short array of 32768(bianry: 1+0*15) x 1 size
+  }
+  // cerr << "colorTable: " << *colorTable[0] << "; " << *colorTable[1] << "; " << *colorTable[2] << "; " << *colorTable[3] << endl;
+  // cerr << "scalarOpacityTable: " << *scalarOpacityTable[0] << "; " << *scalarOpacityTable[1] << "; " << *scalarOpacityTable[2] << "; " << *scalarOpacityTable[3] << endl;
+  
+  // cerr << "independent components? " << this->GetVolume()->GetProperty()->GetIndependentComponents() << endl; // 1, true, means each component will be independetly passed through a lookup table to determine RGBA, shaded.
 }
 
 // This method displays the image that has been created
@@ -1229,10 +1298,10 @@ void vtkFixedPointVolumeRayCastMapper::DisplayRenderedImage(vtkRenderer* ren, vt
   {
     depth = -1;
   }
-
-  if (this->FinalColorWindow != 1.0 || this->FinalColorLevel != 0.5)
+  cerr << "depth: " << depth << endl;
+  if (this->FinalColorWindow != 1.0 || this->FinalColorLevel != 0.5) // true
   {
-    this->ApplyFinalColorWindowLevel();
+    this->ApplyFinalColorWindowLevel(); // apply window level operation: ex: contrast and brightness
   }
 
   this->ImageDisplayHelper->RenderTexture(vol, ren, this->RayCastImage, depth);
@@ -1368,13 +1437,14 @@ void vtkFixedPointVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume* vol)
   //                    of threads exceeds 1.");
   //    this->ThreadWarning = false;
   //    }
-
+  // cerr << "in vtkFixedPointVolumeRayCastmapper" << endl;
   if (vtkImageData::SafeDownCast(this->GetInput()) == nullptr)
   {
     vtkWarningMacro("Mapper supports only vtkImageData");
     return;
   }
 
+  // cerr << "blend mode: " << this->GetBlendMode() << endl; // using composite blend
   if (this->GetBlendMode() != vtkVolumeMapper::COMPOSITE_BLEND &&
     this->GetBlendMode() != vtkVolumeMapper::MAXIMUM_INTENSITY_BLEND &&
     this->GetBlendMode() != vtkVolumeMapper::MINIMUM_INTENSITY_BLEND &&
@@ -1397,9 +1467,9 @@ void vtkFixedPointVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume* vol)
   double dummyOrigin[3] = { 0.0, 0.0, 0.0 };
   double dummySpacing[3] = { 0.0, 0.0, 0.0 };
   int dummyExtent[6] = { 0, 0, 0, 0, 0, 0 };
-  this->PerImageInitialization(ren, vol, 0, dummyOrigin, dummySpacing, dummyExtent);
+  this->PerImageInitialization(ren, vol, 0, dummyOrigin, dummySpacing, dummyExtent); // 1/4 steps
 
-  this->PerVolumeInitialization(ren, vol);
+  this->PerVolumeInitialization(ren, vol); // 2/4 steps 
 
   vtkRenderWindow* renWin = ren->GetRenderWindow();
 
@@ -1409,14 +1479,14 @@ void vtkFixedPointVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume* vol)
     return;
   }
 
-  this->PerSubVolumeInitialization(ren, vol, 0);
+  this->PerSubVolumeInitialization(ren, vol, 0); // 3/4 steps
   if (renWin && renWin->CheckAbortStatus())
   {
     this->AbortRender();
     return;
   }
 
-  this->RenderSubVolume();
+  this->RenderSubVolume(); // 4/4 steps
 
   if (renWin && renWin->CheckAbortStatus())
   {
@@ -1441,7 +1511,7 @@ VTK_THREAD_RETURN_TYPE FixedPointVolumeRayCastMapper_CastRays(void* arg)
 {
   // Get the info out of the input structure
   int threadID = ((vtkMultiThreader::ThreadInfo*)(arg))->ThreadID;
-  int threadCount = ((vtkMultiThreader::ThreadInfo*)(arg))->NumberOfThreads;
+  int threadCount = ((vtkMultiThreader::ThreadInfo*)(arg))->NumberOfThreads; // 8
 
   vtkFixedPointVolumeRayCastMapper* me =
     (vtkFixedPointVolumeRayCastMapper*)(((vtkMultiThreader::ThreadInfo*)arg)->UserData);
@@ -1455,13 +1525,13 @@ VTK_THREAD_RETURN_TYPE FixedPointVolumeRayCastMapper_CastRays(void* arg)
   vtkVolume* vol = me->GetVolume();
 
   if (me->GetBlendMode() == vtkVolumeMapper::MAXIMUM_INTENSITY_BLEND ||
-    me->GetBlendMode() == vtkVolumeMapper::MINIMUM_INTENSITY_BLEND)
+    me->GetBlendMode() == vtkVolumeMapper::MINIMUM_INTENSITY_BLEND) // false
   {
     me->GetMIPHelper()->GenerateImage(threadID, threadCount, vol, me);
   }
   else
   {
-    if (me->GetShadingRequired() == 0)
+    if (me->GetShadingRequired() == 0) // false
     {
       if (me->GetGradientOpacityRequired() == 0)
       {
@@ -1474,7 +1544,7 @@ VTK_THREAD_RETURN_TYPE FixedPointVolumeRayCastMapper_CastRays(void* arg)
     }
     else
     {
-      if (me->GetGradientOpacityRequired() == 0)
+      if (me->GetGradientOpacityRequired() == 0) // true
       {
         me->GetCompositeShadeHelper()->GenerateImage(threadID, threadCount, vol, me);
       }
@@ -1610,9 +1680,9 @@ void vtkFixedPointVolumeRayCastMapper::CreateCanonicalView(
 }
 
 void vtkFixedPointVolumeRayCastMapper::ComputeRayInfo(
-  int x, int y, unsigned int pos[3], unsigned int dir[3], unsigned int* numSteps)
+  int x, int y, unsigned int pos[3], unsigned int dir[3], unsigned int* numSteps) // x, y are in ImageMemorySize 2D region
 {
-  float viewRay[3];
+  float viewRay[3]; // in imageviewport 2D domain, viewRay[1]->y value, viewRay[0]->x value, viwRay[2]->x value; range in -1~1
   float rayDirection[3];
   double rayStart[4], rayEnd[4];
 
@@ -1620,6 +1690,7 @@ void vtkFixedPointVolumeRayCastMapper::ComputeRayInfo(
   int imageOrigin[2];
   this->RayCastImage->GetImageViewportSize(imageViewportSize);
   this->RayCastImage->GetImageOrigin(imageOrigin);
+  //cerr << "Image View Port Size: " << imageViewportSize[0] << imageViewportSize[1] << endl;
 
   double offsetX = 1.0 / static_cast<double>(imageViewportSize[0]);
   double offsetY = 1.0 / static_cast<double>(imageViewportSize[1]);
@@ -1650,10 +1721,13 @@ void vtkFixedPointVolumeRayCastMapper::ComputeRayInfo(
   // the zbuffer value instead of 1.0
   viewRay[2] = 0.0;
   vtkVRCMultiplyPointMacro(viewRay, rayStart, this->ViewToVoxelsArray);
+  
 
   viewRay[2] = this->RayCastImage->GetZBufferValue(x, y);
 
   vtkVRCMultiplyPointMacro(viewRay, rayEnd, this->ViewToVoxelsArray);
+  // cerr << "rayStart: " << rayStart[0] << "; " << rayStart[1] << "; "<< rayStart[2] << "; "<< rayStart[3] << endl;
+  // cerr << "rayEnd: " << rayEnd[0] << "; " << rayEnd[1] << "; "<< rayEnd[2] << "; "<< rayEnd[3] << endl;
 
   rayDirection[0] = rayEnd[0] - rayStart[0];
   rayDirection[1] = rayEnd[1] - rayStart[1];

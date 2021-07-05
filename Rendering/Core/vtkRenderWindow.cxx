@@ -259,6 +259,7 @@ void vtkRenderWindow::SetStereoRender(vtkTypeBool stereo)
 // synchronize this process.
 void vtkRenderWindow::Render()
 {
+  cerr << "------- Rendering -------" << endl;
   // if we are in the middle of an abort check then return now
   if (this->InAbortCheck)
   {
@@ -301,11 +302,11 @@ void vtkRenderWindow::Render()
     event = this->RenderTimer->StartScopedEvent("vtkRenderWindow::Render");
   }
 
-  this->DoStereoRender();
+  this->DoStereoRender(); // always do left eye rendering
 
   this->End(); // restores original bindings
 
-  this->CopyResultFrame();
+  this->CopyResultFrame(); // swaping buffers
 
   // reset the buffer size without freeing any memory.
   this->ResultFrame->Reset();
@@ -327,6 +328,7 @@ void vtkRenderWindow::DoStereoRender()
 
   if (!this->StereoRender || (this->StereoType != VTK_STEREO_RIGHT))
   { // render the left eye
+    // cerr << "left eye" << endl;
     vtkRenderer* aren;
     for (this->Renderers->InitTraversal(rsit); (aren = this->Renderers->GetNextRenderer(rsit));)
     {
@@ -341,11 +343,12 @@ void vtkRenderWindow::DoStereoRender()
       }
       aren->GetActiveCamera()->SetLeftEye(1);
     }
-    this->Renderers->Render();
+    this->Renderers->Render(); // Forward the Render() method to each renderer in the list.
   }
 
   if (this->StereoRender)
   {
+    // cerr << "right eye" << endl;
     this->StereoMidpoint();
     if (this->StereoType != VTK_STEREO_LEFT)
     { // render the right eye
@@ -546,6 +549,7 @@ void vtkRenderWindow::StereoRenderComplete()
 //------------------------------------------------------------------------------
 void vtkRenderWindow::CopyResultFrame()
 {
+  // cerr << "this->ResultFrame->GetNumberOfTuples()" << this->ResultFrame->GetNumberOfTuples() << endl;
   if (this->ResultFrame->GetNumberOfTuples() > 0)
   {
     int* size;
@@ -564,7 +568,7 @@ void vtkRenderWindow::CopyResultFrame()
   // more elements on the "draw-buffer" before calling the rendering complete.
   // This event gives them that opportunity.
   this->InvokeEvent(vtkCommand::RenderEvent);
-  this->Frame();
+  this->Frame(); // swapping buffers
 }
 
 //------------------------------------------------------------------------------

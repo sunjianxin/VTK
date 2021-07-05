@@ -912,6 +912,16 @@
   vtkIdType Finc = Einc + Binc;                                                                    \
   vtkIdType Ginc = Einc + Cinc;                                                                    \
   vtkIdType Hinc = Ginc + Binc;
+  /*if (threadID == 0) {\
+    cerr << "Binc: " << Binc << endl;\
+    cerr << "Cinc: " << Cinc << endl;\
+    cerr << "Dinc: " << Dinc << endl;\
+    cerr << "Einc: " << Einc << endl;\
+    cerr << "Finc: " << Finc << endl;\
+    cerr << "Ginc: " << Ginc << endl;\
+    cerr << "Hinc: " << Hinc << endl;\
+  }*/
+
 
 #define VTKKWRCHelper_InitializeTrilinVariablesGO()                                                \
   vtkIdType magOffset;                                                                             \
@@ -1182,6 +1192,8 @@
   for (j = 0; j < imageInUseSize[1]; j++)                                                          \
   {                                                                                                \
     VTKKWRCHelper_OuterInitialization();                                                           \
+    if (threadID == 1) { \
+    }\
     for (i = rowBounds[j * 2]; i <= rowBounds[j * 2 + 1]; i++)                                     \
     {                                                                                              \
       VTKKWRCHelper_InnerInitialization();
@@ -1255,6 +1267,9 @@
                                                                                                    \
   if (!mmvalid)                                                                                    \
   {                                                                                                \
+    if (threadID == 0) {\
+        cerr << "Space leap skip " << endl;\
+    }\
     continue;                                                                                      \
   }
 

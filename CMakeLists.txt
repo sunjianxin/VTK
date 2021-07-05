@@ -9,6 +9,15 @@ if (APPLE)
   include(vtkApple)
 endif ()
 
+# include(/Users/jianxinsun/research/intern/mfa/include/mfa
+#                              /Users/jianxinsun/research/intern/mfa/include/cppoptlib/include
+#                              /Users/jianxinsun/research/intern/mfa/include/diy/include
+#                               /Users/jianxinsun/research/intern/mfa/include/eigen3 SYSTEM)
+include_directories("/Users/jianxinsun/research/intern/mfa/include/mfa")
+include_directories("/Users/jianxinsun/research/intern/mfa/include/cppoptlib/include")
+include_directories("/Users/jianxinsun/research/intern/mfa/include/diy/include")
+include_directories("/Users/jianxinsun/research/intern/mfa/include/eigen3")
+
 # must be before the following iOS / Android
 find_package(Git QUIET)
 include(VTKDetermineVersion)
@@ -262,6 +271,18 @@ set(vtk_source_directories
   "${CMAKE_CURRENT_SOURCE_DIR}/Views"
   "${CMAKE_CURRENT_SOURCE_DIR}/Web"
   "${CMAKE_CURRENT_SOURCE_DIR}/Wrapping")
+
+# Include dirs
+# set                         (CMAKE_INCLUDE_SYSTEM_FLAG_CXX "-isystem")
+# include_directories         (/Users/jianxinsun/research/intern/mfa/include/mfa
+#                              /Users/jianxinsun/research/intern/mfa/include/cppoptlib/include
+#                              /Users/jianxinsun/research/intern/mfa/include/diy/include
+#                              /Users/jianxinsun/research/intern/mfa/include/eigen3 SYSTEM)
+#                              SYSTEM
+#                              ${MPI_INCLUDE_PATH}
+#                             )
+
+
 
 set(remote_default ON)
 if (VTK_WHEEL_BUILD)
