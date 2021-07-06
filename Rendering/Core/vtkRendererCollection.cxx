@@ -39,8 +39,6 @@ void vtkRendererCollection::Render()
   renWin = firstRen->GetRenderWindow();
   numLayers = renWin->GetNumberOfLayers();
 
-  // cerr << "numLayers" << numLayers << endl;
-
   // Only have the renderers render from back to front.  This is necessary
   // because transparent renderers clear the z-buffer before each render and
   // then overlay their image.
@@ -50,7 +48,7 @@ void vtkRendererCollection::Render()
     {
       if (ren->GetLayer() == i)
       {
-        ren->Render(); // Magic is here, create an image, ren is type "vtkRenderer"
+        ren->Render();
       }
     }
   }

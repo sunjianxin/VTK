@@ -234,12 +234,11 @@ int vtkOpenGLRenderer::GetDepthPeelingHigherLayer()
 // Concrete open gl render method.
 void vtkOpenGLRenderer::DeviceRender()
 {
-  // cerr << "in open gl renderer" << endl;
   vtkTimerLog::MarkStartEvent("OpenGL Dev Render");
 
   bool computeIBLTextures = !(this->Pass && this->Pass->IsA("vtkOSPRayPass")) &&
     this->UseImageBasedLighting && this->EnvironmentTexture;
-  if (computeIBLTextures) // false
+  if (computeIBLTextures)
   {
     this->GetEnvMapLookupTable()->Load(this);
     this->GetEnvMapPrefiltered()->Load(this);
@@ -286,18 +285,17 @@ void vtkOpenGLRenderer::DeviceRender()
   }
   else
   {
-    // cerr << "in else" << endl;
     // Do not remove this MakeCurrent! Due to Start / End methods on
     // some objects which get executed during a pipeline update,
     // other windows might get rendered since the last time
     // a MakeCurrent was called.
-    this->RenderWindow->MakeCurrent(); // Attempt to make this window the current graphics context for the calling thread.
+    this->RenderWindow->MakeCurrent();
     vtkOpenGLClearErrorMacro();
 
     this->UpdateCamera();
     this->UpdateLightGeometry();
     this->UpdateLights();
-    this->UpdateGeometry(); // magic
+    this->UpdateGeometry();
 
     vtkOpenGLCheckErrorMacro("failed after DeviceRender");
   }
@@ -316,7 +314,6 @@ void vtkOpenGLRenderer::DeviceRender()
 // visualization network to update.
 int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
 {
-  // cerr << "updating geometry in openglrender, overrided" << endl;
   vtkRenderTimerLog* timer = this->GetRenderWindow()->GetRenderTimer();
   VTK_SCOPED_RENDER_EVENT("vtkOpenGLRenderer::UpdateGeometry", timer);
 
@@ -329,7 +326,7 @@ int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
     return 0;
   }
 
-  if (this->Selector) // false
+  if (this->Selector)
   {
     VTK_SCOPED_RENDER_EVENT2("Selection", timer, selectionEvent);
 
@@ -375,7 +372,7 @@ int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
   // if we are suing shadows then let the renderpasses handle it
   // for opaque and translucent
   int hasTranslucentPolygonalGeometry = 0;
-  if (this->UseShadows) // false
+  if (this->UseShadows)
   {
     VTK_SCOPED_RENDER_EVENT2("Shadows", timer, shadowsEvent);
 
@@ -391,7 +388,6 @@ int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
   }
   else
   {
-    // cerr << "UseShadows: " << this->UseShadows << endl;
     // Opaque geometry first:
     timer->MarkStartEvent("Opaque Geometry");
     this->DeviceRenderOpaqueGeometry(fbo);
@@ -403,7 +399,7 @@ int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
     {
       hasTranslucentPolygonalGeometry = this->PropArray[i]->HasTranslucentPolygonalGeometry();
     }
-    if (hasTranslucentPolygonalGeometry) // false
+    if (hasTranslucentPolygonalGeometry)
     {
       timer->MarkStartEvent("Translucent Geometry");
       this->DeviceRenderTranslucentPolygonalGeometry(fbo);
@@ -413,7 +409,7 @@ int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
 
   // Apply FXAA before volumes and overlays. Volumes don't need AA, and overlays
   // are usually things like text, which are already antialiased.
-  if (this->UseFXAA) // FXAA: Fast approximate anti-aliasing, false
+  if (this->UseFXAA)
   {
     timer->MarkStartEvent("FXAA");
     if (!this->FXAAFilter)
@@ -437,8 +433,7 @@ int vtkOpenGLRenderer::UpdateGeometry(vtkFrameBufferObjectBase* fbo)
     timer->MarkStartEvent("Volumes");
     for (i = 0; i < this->PropArrayCount; i++)
     {
-      // cerr << "will render volume" << endl;
-      this->NumberOfPropsRendered += this->PropArray[i]->RenderVolumetricGeometry(this); // magic
+      this->NumberOfPropsRendered += this->PropArray[i]->RenderVolumetricGeometry(this);
     }
     timer->MarkEndEvent();
   }
@@ -488,8 +483,7 @@ void vtkOpenGLRenderer::DeviceRenderOpaqueGeometry(vtkFrameBufferObjectBase* fbo
   bool useHLR = this->UseHiddenLineRemoval &&
     vtkHiddenLineRemovalPass::WireframePropsExist(this->PropArray, this->PropArrayCount);
 
-  // cerr << "useHLR: " << useHLR << endl;
-  if (useHLR) // false
+  if (useHLR)
   {
     vtkNew<vtkHiddenLineRemovalPass> hlrPass;
     vtkRenderState s(this);
@@ -500,9 +494,7 @@ void vtkOpenGLRenderer::DeviceRenderOpaqueGeometry(vtkFrameBufferObjectBase* fbo
   }
   else
   {
-    // cerr << "UseSSAO" << this->UseSSAO << endl;
-    // cerr << "SSAOPass" << this->SSAOPass << endl;
-    if (this->UseSSAO) // Render Pass Type, Screen-Space Ambient Occlusion, false
+    if (this->UseSSAO)
     {
       if (!this->SSAOPass)
       {
@@ -522,7 +514,6 @@ void vtkOpenGLRenderer::DeviceRenderOpaqueGeometry(vtkFrameBufferObjectBase* fbo
     }
     else
     {
-      // cerr << "not using SSAO" << endl;
       this->Superclass::DeviceRenderOpaqueGeometry();
     }
   }

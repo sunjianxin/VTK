@@ -350,7 +350,6 @@ double vtkVolume::GetMaxZBound()
 // this is its opportunity to render
 int vtkVolume::RenderVolumetricGeometry(vtkViewport* vp)
 {
-  // cerr << "in vtkVolume RenderVolumetricGeometry" << endl;
   this->Update();
 
   if (!this->Mapper)

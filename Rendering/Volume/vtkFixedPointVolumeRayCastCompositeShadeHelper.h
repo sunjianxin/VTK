@@ -47,8 +47,6 @@ public:
   void GenerateImage(int threadID, int threadCount, vtkVolume* vol,
     vtkFixedPointVolumeRayCastMapper* mapper) override;
 
-  // double getMFAValue(unsigned int *pos, float range);
-
 protected:
   vtkFixedPointVolumeRayCastCompositeShadeHelper();
   ~vtkFixedPointVolumeRayCastCompositeShadeHelper() override;
