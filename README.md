@@ -1,3 +1,7 @@
+Note
+============
+This is a hack repo on the existing VTK volume rendering pipeline for using MFA decoding by Mathematics and Computer Science (MCS) Division, Argonne National Laboratory.
+
 ![VTK - The Visualization Toolkit][vtk-banner]
 
 Introduction
