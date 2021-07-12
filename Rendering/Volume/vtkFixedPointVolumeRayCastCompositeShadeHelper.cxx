@@ -341,6 +341,12 @@ template <class T>
 void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
   T* data, int threadID, int threadCount, vtkFixedPointVolumeRayCastMapper* mapper, vtkVolume* vol) // handling batch of image pixels assigned to this thread
 {
+  Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
+  mfa::MFA_Data<T>& mfa_data = *(b->vars[0].mfa_data);
+  TensorProduct<real_t>&  t = mfa_data.tmesh.tensor_prods[0];
+  mfa::Decoder<T> decoder(mfa_data, 0);
+  mfa::FastDecodeInfo<T> di(decoder);
+
 
   std::chrono::time_point<std::chrono::system_clock> before;
   std::chrono::time_point<std::chrono::system_clock> after;
@@ -394,7 +400,6 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
   VectorX<double> out_pt(4);
 
   // cerr << "I am MFA Data: " << mapper->GetMfaTest() << endl;
-  Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
   // cerr << "use MFA? " << mapper->GetUseMfa() << endl;
 
   
@@ -597,12 +602,12 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
           param(1) = y;
           param(2) = z;
 
-          b->my_decode_point(param, out_pt);
+          decoder.FastVolPt(param, out_pt, di, t);
           // cerr << "========thread " << threadID << "===========evaluation parameters: [" << param(0) << ", " << param(1) << ", " << param(2) << "]" << endl;
           // cerr << "-decoded point: [" << out_pt[0] << ", " <<  out_pt[1] << ", " << out_pt[2] << ", " << out_pt[3] << "]" << endl;
           // mymfaval << out_pt[3] << "\n";
 
-          double v = out_pt[3];
+          double v = out_pt[0];
           double ratio = (v + 2.0)/11.0;
           // double ratio = v/150.0;
           if (ratio > 1) {
