@@ -347,6 +347,8 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
   mfa::Decoder<T> decoder(mfa_data, 0);
   mfa::FastDecodeInfo<T> di(decoder);
 
+  constexpr double recip = 1 / 2211772.5;
+
 
   std::chrono::time_point<std::chrono::system_clock> before;
   std::chrono::time_point<std::chrono::system_clock> after;
@@ -587,9 +589,9 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
         // if (threadID == 0) { 
           // myval << val << "\n";
           // get position x, y, z in range [0, 1]
-          double x = (double)pos[0] / 2211772.5;
-          double y = (double)pos[1] / 2211772.5;
-          double z = (double)pos[2] / 2211772.5;
+          param(0) = pos[0] * recip;
+          param(1) = pos[1] * recip;
+          param(2) = pos[2] * recip;
           // myxyz << x << "," << y << "," << z << "\n";
 
           // VectorX<double> param(3); 
@@ -597,10 +599,6 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
           // param(0) = 0.5;
           // param(1) = 0.5;
           // param(2) = 0.5;
-
-          param(0) = x;
-          param(1) = y;
-          param(2) = z;
 
           decoder.FastVolPt(param, out_pt, di, t);
           // cerr << "========thread " << threadID << "===========evaluation parameters: [" << param(0) << ", " << param(1) << ", " << param(2) << "]" << endl;
