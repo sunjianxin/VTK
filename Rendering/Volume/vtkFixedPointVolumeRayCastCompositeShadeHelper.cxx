@@ -341,6 +341,25 @@ template <class T>
 void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
   T* data, int threadID, int threadCount, vtkFixedPointVolumeRayCastMapper* mapper, vtkVolume* vol) // handling batch of image pixels assigned to this thread
 {
+  /*
+  Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
+  VectorXi no_derivs;
+  mfa::MFA_Data<real_t>&  mfa_data = *(b->vars[0].mfa_data);
+  TensorProduct<real_t>&  t = mfa_data.tmesh.tensor_prods[0];
+  mfa::Decoder<real_t>    decoder(mfa_data, 0);
+  mfa::DecodeInfo<real_t> decode_info(mfa_data, no_derivs);
+  */
+
+  Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
+  // mfa::MFA_Data<T>& mfa_data = *(b->vars[0].mfa_data);
+  mfa::MFA_Data<real_t>& mfa_data = *(b->vars[0].mfa_data);
+  TensorProduct<real_t>&  t = mfa_data.tmesh.tensor_prods[0];
+  // mfa::Decoder<T> decoder(mfa_data, 0);
+  mfa::Decoder<real_t> decoder(mfa_data, 0);
+  // mfa::FastDecodeInfo<T> di(decoder);
+  mfa::FastDecodeInfo<real_t> di(decoder);
+
+  constexpr double recip = 1 / 2211772.5;
 
   std::chrono::time_point<std::chrono::system_clock> before;
   std::chrono::time_point<std::chrono::system_clock> after;
@@ -391,10 +410,11 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
 
 
   VectorX<double> param(3); 
-  VectorX<double> out_pt(4);
+  VectorX<double> out_pt(1);
+  VectorX<double> out_pt4(4);
 
   // cerr << "I am MFA Data: " << mapper->GetMfaTest() << endl;
-  Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
+  // Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
   // cerr << "use MFA? " << mapper->GetUseMfa() << endl;
 
   
@@ -500,119 +520,117 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
     }
     */
     // start ray traversal
-    before = std::chrono::system_clock::now();
-    if (spos[0] != oldSPos[0] || spos[1] != oldSPos[1] || spos[2] != oldSPos[2])
-    {
-      oldSPos[0] = spos[0];
-      oldSPos[1] = spos[1];
-      oldSPos[2] = spos[2];
+    // if (!mapper->GetUseMfa()) {
+       //  before = std::chrono::system_clock::now();
+        if (spos[0] != oldSPos[0] || spos[1] != oldSPos[1] || spos[2] != oldSPos[2])
+        {
+          oldSPos[0] = spos[0];
+          oldSPos[1] = spos[1];
+          oldSPos[2] = spos[2];
 
-      dptr = data + spos[0] * inc[0] + spos[1] * inc[1] + spos[2] * inc[2];
-      /*
-      if (threadID == 0 ) { 
-          cerr << "inc: " << inc[0] << "; " << inc[1] << "; " << inc[2] << endl;
-          cerr << "dptr" << static_cast<unsigned int>(*(dptr)) << endl;
-          printf("data u: %u \n", static_cast<unsigned int>(*(data)));
-          printf("dptr u: %u \n", static_cast<unsigned int>(*(dptr)));
-      }
-      */
-      VTKKWRCHelper_GetCellScalarValuesSimple(dptr); // update 8 corners of the cell
-      dirPtrABCD = gradientDir[spos[2]] + spos[0] * dInc[0] + spos[1] * dInc[1];
-      dirPtrEFGH = gradientDir[spos[2] + 1] + spos[0] * dInc[0] + spos[1] * dInc[1];
-      needToSampleDirection = 1;
-    }
+          dptr = data + spos[0] * inc[0] + spos[1] * inc[1] + spos[2] * inc[2];
+          /*
+          if (threadID == 0 ) { 
+              cerr << "inc: " << inc[0] << "; " << inc[1] << "; " << inc[2] << endl;
+              cerr << "dptr" << static_cast<unsigned int>(*(dptr)) << endl;
+              printf("data u: %u \n", static_cast<unsigned int>(*(data)));
+              printf("dptr u: %u \n", static_cast<unsigned int>(*(dptr)));
+          }
+          */
+          VTKKWRCHelper_GetCellScalarValuesSimple(dptr); // update 8 corners of the cell
+          dirPtrABCD = gradientDir[spos[2]] + spos[0] * dInc[0] + spos[1] * dInc[1];
+          dirPtrEFGH = gradientDir[spos[2] + 1] + spos[0] * dInc[0] + spos[1] * dInc[1];
+          needToSampleDirection = 1;
+        }
 
-    VTKKWRCHelper_ComputeWeights(pos);
-    /*
-    if (threadID == 0) {
-        printf("val before %u\n", (unsigned int)val);
-    }
-    */
-    VTKKWRCHelper_InterpolateScalar(val); // val is unsigned short, update val, val is index
+    if (!mapper->GetUseMfa()) {
+        before = std::chrono::system_clock::now();
+        VTKKWRCHelper_ComputeWeights(pos);
+        /*
+        if (threadID == 0) {
+            printf("val before %u\n", (unsigned int)val);
+        }
+        */
+        VTKKWRCHelper_InterpolateScalar(val); // val is unsigned short, update val, val is index
 
-    after = std::chrono::system_clock::now();
-    // auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
-    auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before);
-    if (threadID == 0) {
-        time0 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 1) {
-        time1 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 2) {
-        time2 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 3) {
-        time3 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 4) {
-        time4 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 5) {
-        time5 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 6) {
-        time6 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    if (threadID == 7) {
-        time7 += nanoseconds.count();
-        // cerr << "time0: " << time0 << endl;
-        // cerr << "time0: " << nanoseconds.count() << endl;
-    }
-    // Replace val by value retrieved by querying MFA model, val in range 0~255
-
-
-#if 1
-    if (mapper->GetUseMfa()) {
+        after = std::chrono::system_clock::now();
+        // auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(after - before);
+        auto nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(after - before);
+        if (threadID == 0) {
+            time0 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 1) {
+            time1 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 2) {
+            time2 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 3) {
+            time3 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 4) {
+            time4 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 5) {
+            time5 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 6) {
+            time6 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        if (threadID == 7) {
+            time7 += nanoseconds.count();
+            // cerr << "time0: " << time0 << endl;
+            // cerr << "time0: " << nanoseconds.count() << endl;
+        }
+        // Replace val by value retrieved by querying MFA model, val in range 0~255
+    } else {
         mfa_before = std::chrono::system_clock::now();
-        // if (threadID == 0) { 
-          // myval << val << "\n";
-          // get position x, y, z in range [0, 1]
-          double x = (double)pos[0] / 2211772.5;
-          double y = (double)pos[1] / 2211772.5;
-          double z = (double)pos[2] / 2211772.5;
-          // myxyz << x << "," << y << "," << z << "\n";
+        // get position x, y, z in range [0, 1]
+        /*
+        double x = (double)pos[0] / 2211772.5;
+        double y = (double)pos[1] / 2211772.5;
+        double z = (double)pos[2] / 2211772.5;
+        param(0) = x;
+        param(1) = y;
+        param(2) = z;
+        */
+        param(0) = pos[0] * recip;
+        param(1) = pos[1] * recip;
+        param(2) = pos[2] * recip;
+        // do MFA decoding
+        // b->my_decode_point(param, out_pt4);
+        // decoder.VolPt(param, out_pt, decode_info, t);
+        decoder.FastVolPt(param, out_pt, di, t);
+        // cerr << "========thread " << threadID << "===========evaluation parameters: [" << param(0) << ", " << param(1) << ", " << param(2) << "]" << endl;
+        // cerr << "-decoded point: [" << out_pt[0] << ", " <<  out_pt[1] << ", " << out_pt[2] << ", " << out_pt[3] << "]" << endl;
+        // mymfaval << out_pt[0] << "\n";
+        // if (threadID == 0)
+        //     cerr << "+++++++++++mymfaval: " << out_pt[0] << "," << out_pt4[3] << "\n";
 
-          // VectorX<double> param(3); 
-          // VectorX<double> out_pt(4);
-          // param(0) = 0.5;
-          // param(1) = 0.5;
-          // param(2) = 0.5;
-
-          param(0) = x;
-          param(1) = y;
-          param(2) = z;
-
-          b->my_decode_point(param, out_pt);
-          // cerr << "========thread " << threadID << "===========evaluation parameters: [" << param(0) << ", " << param(1) << ", " << param(2) << "]" << endl;
-          // cerr << "-decoded point: [" << out_pt[0] << ", " <<  out_pt[1] << ", " << out_pt[2] << ", " << out_pt[3] << "]" << endl;
-          // mymfaval << out_pt[3] << "\n";
-
-          double v = out_pt[3];
-          double ratio = (v + 2.0)/11.0;
-          // double ratio = v/150.0;
-          if (ratio > 1) {
-              ratio = 1;
-          }
-          if (ratio < 0) {
-              ratio = 0;
-          }
-          unsigned short new_val = (unsigned short)(255*ratio);
-        // }
+        double v = out_pt[0];
+        double ratio = (v + 2.0)/11.0; // for sinc dataset
+        // double ratio = v/136.0; // for nek5000 dataset
+        if (ratio > 1) {
+            ratio = 1;
+        }
+        if (ratio < 0) {
+            ratio = 0;
+        }
+        unsigned short new_val = (unsigned short)(255*ratio);
         val = new_val;
         mfa_after = std::chrono::system_clock::now();
         auto mfa_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(mfa_after - mfa_before);
@@ -665,7 +683,6 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
             mfa_counter7++;
         }
     }
-#endif
 
     // cerr << "new val: " << val << endl;
     
@@ -730,19 +747,19 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
       filetime0.open("time0.txt");
       filetime0 << time0;
       filetime0.close();
-      cerr << "time0: " << time0 << endl;
+      // cerr << "time0: " << time0 << endl;
 
       std::ofstream mfa_filetime0;
       mfa_filetime0.open("mfa_time0.txt");
       mfa_filetime0 << mfa_time0;
       mfa_filetime0.close();
-      cerr << "mfa_time0: " << mfa_time0 << endl;
+      // cerr << "mfa_time0: " << mfa_time0 << endl;
 
       std::ofstream mfa_filecount0;
       mfa_filecount0.open("mfa_count0.txt");
       mfa_filecount0 << mfa_counter0;
       mfa_filecount0.close();
-      cerr << "mfa_count0: " << mfa_counter0 << endl;
+      // cerr << "mfa_count0: " << mfa_counter0 << endl;
 
   }
   if (threadID == 1) {
@@ -750,133 +767,133 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
       filetime1.open("time1.txt");
       filetime1 << time1;
       filetime1.close();
-      cerr << "time1: " << time1 << endl;
+      // cerr << "time1: " << time1 << endl;
 
       std::ofstream mfa_filetime1;
       mfa_filetime1.open("mfa_time1.txt");
       mfa_filetime1 << mfa_time1;
       mfa_filetime1.close();
-      cerr << "mfa_time1: " << mfa_time1 << endl;
+      // cerr << "mfa_time1: " << mfa_time1 << endl;
 
       std::ofstream mfa_filecount1;
       mfa_filecount1.open("mfa_count1.txt");
       mfa_filecount1 << mfa_counter1;
       mfa_filecount1.close();
-      cerr << "mfa_count1: " << mfa_counter1 << endl;
+      // cerr << "mfa_count1: " << mfa_counter1 << endl;
   }
   if (threadID == 2) {
       std::ofstream filetime2;
       filetime2.open("time2.txt");
       filetime2 << time2;
       filetime2.close();
-      cerr << "time2: " << time2 << endl;
+      // cerr << "time2: " << time2 << endl;
 
       std::ofstream mfa_filetime2;
       mfa_filetime2.open("mfa_time2.txt");
       mfa_filetime2 << mfa_time2;
       mfa_filetime2.close();
-      cerr << "mfa_time2: " << mfa_time2 << endl;
+      // cerr << "mfa_time2: " << mfa_time2 << endl;
 
       std::ofstream mfa_filecount2;
       mfa_filecount2.open("mfa_count2.txt");
       mfa_filecount2 << mfa_counter2;
       mfa_filecount2.close();
-      cerr << "mfa_count2: " << mfa_counter2 << endl;
+      // cerr << "mfa_count2: " << mfa_counter2 << endl;
   }
   if (threadID == 3) {
       std::ofstream filetime3;
       filetime3.open("time3.txt");
       filetime3 << time3;
       filetime3.close();
-      cerr << "time3: " << time3 << endl;
+      // cerr << "time3: " << time3 << endl;
 
       std::ofstream mfa_filetime3;
       mfa_filetime3.open("mfa_time3.txt");
       mfa_filetime3 << mfa_time3;
       mfa_filetime3.close();
-      cerr << "mfa_time3: " << mfa_time3 << endl;
+      // cerr << "mfa_time3: " << mfa_time3 << endl;
 
       std::ofstream mfa_filecount3;
       mfa_filecount3.open("mfa_count3.txt");
       mfa_filecount3 << mfa_counter3;
       mfa_filecount3.close();
-      cerr << "mfa_count3: " << mfa_counter3 << endl;
+      // cerr << "mfa_count3: " << mfa_counter3 << endl;
   }
   if (threadID == 4) {
       std::ofstream filetime4;
       filetime4.open("time4.txt");
       filetime4 << time4;
       filetime4.close();
-      cerr << "time4: " << time4 << endl;
+      // cerr << "time4: " << time4 << endl;
 
       std::ofstream mfa_filetime4;
       mfa_filetime4.open("mfa_time4.txt");
       mfa_filetime4 << mfa_time4;
       mfa_filetime4.close();
-      cerr << "mfa_time4: " << mfa_time4 << endl;
+      // cerr << "mfa_time4: " << mfa_time4 << endl;
 
       std::ofstream mfa_filecount4;
       mfa_filecount4.open("mfa_count4.txt");
       mfa_filecount4 << mfa_counter4;
       mfa_filecount4.close();
-      cerr << "mfa_count4: " << mfa_counter4 << endl;
+      // cerr << "mfa_count4: " << mfa_counter4 << endl;
   }
   if (threadID == 5) {
       std::ofstream filetime5;
       filetime5.open("time5.txt");
       filetime5 << time5;
       filetime5.close();
-      cerr << "time5: " << time5 << endl;
+      // cerr << "time5: " << time5 << endl;
 
       std::ofstream mfa_filetime5;
       mfa_filetime5.open("mfa_time5.txt");
       mfa_filetime5 << mfa_time5;
       mfa_filetime5.close();
-      cerr << "mfa_time5: " << mfa_time5 << endl;
+      // cerr << "mfa_time5: " << mfa_time5 << endl;
 
       std::ofstream mfa_filecount5;
       mfa_filecount5.open("mfa_count5.txt");
       mfa_filecount5 << mfa_counter5;
       mfa_filecount5.close();
-      cerr << "mfa_count5: " << mfa_counter5 << endl;
+      // cerr << "mfa_count5: " << mfa_counter5 << endl;
   }
   if (threadID == 6) {
       std::ofstream filetime6;
       filetime6.open("time6.txt");
       filetime6 << time6;
       filetime6.close();
-      cerr << "time6: " << time6 << endl;
+      // cerr << "time6: " << time6 << endl;
 
       std::ofstream mfa_filetime6;
       mfa_filetime6.open("mfa_time6.txt");
       mfa_filetime6 << mfa_time6;
       mfa_filetime6.close();
-      cerr << "mfa_time6: " << mfa_time6 << endl;
+      // cerr << "mfa_time6: " << mfa_time6 << endl;
 
       std::ofstream mfa_filecount6;
       mfa_filecount6.open("mfa_count6.txt");
       mfa_filecount6 << mfa_counter6;
       mfa_filecount6.close();
-      cerr << "mfa_count6: " << mfa_counter6 << endl;
+      // cerr << "mfa_count6: " << mfa_counter6 << endl;
   }
   if (threadID == 7) {
       std::ofstream filetime7;
       filetime7.open("time7.txt");
       filetime7 << time7;
       filetime7.close();
-      cerr << "time7: " << time7 << endl;
+      // cerr << "time7: " << time7 << endl;
 
       std::ofstream mfa_filetime7;
       mfa_filetime7.open("mfa_time7.txt");
       mfa_filetime7 << mfa_time7;
       mfa_filetime7.close();
-      cerr << "mfa_time7: " << mfa_time7 << endl;
+      // cerr << "mfa_time7: " << mfa_time7 << endl;
 
       std::ofstream mfa_filecount7;
       mfa_filecount7.open("mfa_count7.txt");
       mfa_filecount7 << mfa_counter7;
       mfa_filecount7.close();
-      cerr << "mfa_count7: " << mfa_counter7 << endl;
+      // cerr << "mfa_count7: " << mfa_counter7 << endl;
   }
 }
 
@@ -1273,10 +1290,10 @@ void vtkFixedPointVolumeRayCastCompositeShadeHelper::GenerateImage(
     if (mapper->GetCurrentScalars()->GetNumberOfComponents() == 1) // true
     {
       // Scale == 1.0 and shift == 0.0 - simple case (faster)
-      if (threadID == 0) {
-        cerr << "mapper->GetTableScale()[0]" << mapper->GetTableScale()[0] << endl; 
-        cerr << "mapper->GetTableShift()[0]" << mapper->GetTableShift()[0] << endl;
-      }
+      // if (threadID == 0) {
+      //   cerr << "mapper->GetTableScale()[0]" << mapper->GetTableScale()[0] << endl; 
+      //   cerr << "mapper->GetTableShift()[0]" << mapper->GetTableShift()[0] << endl;
+      // }
       if (mapper->GetTableScale()[0] == 1.0 && mapper->GetTableShift()[0] == 0.0) // true
       {
         // cerr << "in if" << endl;

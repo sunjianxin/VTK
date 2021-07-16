@@ -14,6 +14,8 @@ include_directories("/Users/jianxinsun/research/intern/mfa/include/cppoptlib/inc
 include_directories("/Users/jianxinsun/research/intern/mfa/include/diy/include")
 include_directories("/Users/jianxinsun/research/intern/mfa/include/eigen3")
 
+add_definitions (-DMFA_NO_WEIGHTS)
+
 # must be before the following iOS / Android
 find_package(Git QUIET)
 include(VTKDetermineVersion)

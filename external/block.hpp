@@ -99,11 +99,12 @@ struct Block : public BlockBase<T>
                                                                 // using Eigen::Ref instead of C++ reference so that pybind11 can pass by reference
     {
         // geometry
+        /*
         VectorX<T> geom_cpt(dom_dim);
         this->mfa->DecodePt(*(this->geometry.mfa_data), param, geom_cpt);
         for (auto i = 0; i < dom_dim; i++)
             cpt(i) = geom_cpt(i);
-
+        */
         // science variables
         VectorX<T> var_cpt(1);                                  // each variable is a scalar
         for (auto i = 0; i < this->vars.size(); i++)
