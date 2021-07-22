@@ -419,9 +419,7 @@ public:
   virtual void SetInputConnection(int port, vtkAlgorithmOutput* input);
   virtual void SetInputConnection(vtkAlgorithmOutput* input);
   
-  // void SetMFAInputConnection(diy::Master& master);
   void SetMFAInputConnection(void* master, bool useMFA, int size, std::string dataset);
-  // void SetMFAInputConnection();
   ///@}
 
   ///@{
