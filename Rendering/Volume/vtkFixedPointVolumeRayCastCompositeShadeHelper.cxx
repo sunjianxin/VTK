@@ -47,6 +47,15 @@
 
 #include <cmath>
 
+// sinc 20-11
+// #define LENGTH 19.0
+
+// sinc 200-20
+#define LENGTH 199.0
+
+#define MIN -2.0
+#define MAX 9.0
+
 vtkStandardNewMacro(vtkFixedPointVolumeRayCastCompositeShadeHelper);
 
 // Construct a new vtkFixedPointVolumeRayCastCompositeShadeHelper with default values
@@ -326,6 +335,7 @@ long int mfa_counter5 = 0;
 long int mfa_counter6 = 0;
 long int mfa_counter7 = 0;
 
+
 // This method is used when the interpolation type is linear and the data
 // has one component and scale = 1.0 and shift = 0.0. In the inner loop we
 // get the data value for the eight cell corners (if we have changed cells)
@@ -341,25 +351,20 @@ template <class T>
 void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
   T* data, int threadID, int threadCount, vtkFixedPointVolumeRayCastMapper* mapper, vtkVolume* vol) // handling batch of image pixels assigned to this thread
 {
-  /*
+  
   Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
-  VectorXi no_derivs;
-  mfa::MFA_Data<real_t>&  mfa_data = *(b->vars[0].mfa_data);
-  TensorProduct<real_t>&  t = mfa_data.tmesh.tensor_prods[0];
-  mfa::Decoder<real_t>    decoder(mfa_data, 0);
-  mfa::DecodeInfo<real_t> decode_info(mfa_data, no_derivs);
-  */
-
-  Block<real_t>* b = (Block<real_t>*)(mapper->GetMfaBlock());
-  // mfa::MFA_Data<T>& mfa_data = *(b->vars[0].mfa_data);
   mfa::MFA_Data<real_t>& mfa_data = *(b->vars[0].mfa_data);
   TensorProduct<real_t>&  t = mfa_data.tmesh.tensor_prods[0];
-  // mfa::Decoder<T> decoder(mfa_data, 0);
   mfa::Decoder<real_t> decoder(mfa_data, 0);
-  // mfa::FastDecodeInfo<T> di(decoder);
   mfa::FastDecodeInfo<real_t> di(decoder);
+  int size =  mapper->GetMfaSize() - 1;
+  std::string dataset =  mapper->GetDataset();
 
-  constexpr double recip = 1 / 2211772.5;
+  // constexpr double recip = 1 / 2211772.5;
+  // double length = 19.0; // for 20x20x20 cube dataset
+  // constexpr double recip = 1 / ((LENGTH*32767.0) + 0.5);
+  double recip = 1 / ((size*32767.0) + 0.5);
+
 
   std::chrono::time_point<std::chrono::system_clock> before;
   std::chrono::time_point<std::chrono::system_clock> after;
@@ -599,6 +604,7 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
         // Replace val by value retrieved by querying MFA model, val in range 0~255
     } else {
         mfa_before = std::chrono::system_clock::now();
+        VTKKWRCHelper_ComputeWeights(pos);
         // get position x, y, z in range [0, 1]
         /*
         double x = (double)pos[0] / 2211772.5;
@@ -622,8 +628,15 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
         //     cerr << "+++++++++++mymfaval: " << out_pt[0] << "," << out_pt4[3] << "\n";
 
         double v = out_pt[0];
-        double ratio = (v + 2.0)/11.0; // for sinc dataset
-        // double ratio = v/136.0; // for nek5000 dataset
+        double ratio;
+        if (dataset == "sinc") {
+            ratio = (v + 2.0)/11.0625; // for sinc dataset
+            // ratio = (v + 2.16934)/(9.98008 + 2.16934); // for sinc 200-20 dataset
+            // ratio = (v + 1.85646)/(8.00917 + 1.85646); // for sinc 20-11 dataset
+        }
+        if (dataset == "nek5000") {
+            ratio = v/135.111; // for nek5000 dataset
+        }
         if (ratio > 1) {
             ratio = 1;
         }
@@ -631,7 +644,9 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilin(
             ratio = 0;
         }
         unsigned short new_val = (unsigned short)(255*ratio);
+
         val = new_val;
+
         mfa_after = std::chrono::system_clock::now();
         auto mfa_nanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(mfa_after - mfa_before);
         if (threadID == 0) {

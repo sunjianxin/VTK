@@ -972,17 +972,22 @@ void vtkAlgorithm::RemoveAllInputConnections(int port)
 
 //------------------------------------------------------------------------------
 // void vtkAlgorithm::SetMFAInputConnection(diy::Master& master)
-void vtkAlgorithm::SetMFAInputConnection(void* block, bool useMFA)
+void vtkAlgorithm::SetMFAInputConnection(void* block, bool useMFA, int size, std::string dataset)
 // void vtkAlgorithm::SetMFAInputConnection()
 {
   this->MfaBlock = block;
   this->useMFA = useMFA;
-  this->MfaTest = 7;
+  this->MfaSize = size;
+  this->dataset = dataset;
   // cerr << "777777 mfa setup!" << endl;
 }
 
-int vtkAlgorithm::GetMfaTest() {
-  return MfaTest;
+int vtkAlgorithm::GetMfaSize() {
+  return MfaSize;
+}
+
+std::string vtkAlgorithm::GetDataset() {
+  return dataset;
 }
 
 void* vtkAlgorithm::GetMfaBlock() {

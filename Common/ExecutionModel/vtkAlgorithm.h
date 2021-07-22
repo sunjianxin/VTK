@@ -420,7 +420,7 @@ public:
   virtual void SetInputConnection(vtkAlgorithmOutput* input);
   
   // void SetMFAInputConnection(diy::Master& master);
-  void SetMFAInputConnection(void* master, bool useMFA);
+  void SetMFAInputConnection(void* master, bool useMFA, int size, std::string dataset);
   // void SetMFAInputConnection();
   ///@}
 
@@ -723,7 +723,8 @@ public:
   vtkGetObjectMacro(ProgressObserver, vtkProgressObserver);
   ///@}
 
-  int GetMfaTest();
+  int GetMfaSize();
+  std::string GetDataset();
   void* GetMfaBlock();
   bool GetUseMfa();
 
@@ -922,7 +923,8 @@ private:
 
   void* MfaBlock;
   bool useMFA = false;
-  int MfaTest;
+  int MfaSize;
+  std::string dataset;
 
 private:
   vtkAlgorithm(const vtkAlgorithm&) = delete;
