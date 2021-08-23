@@ -2802,6 +2802,7 @@ void vtkUnstructuredGridVolumeZSweepMapper::Render(vtkRenderer* ren, vtkVolume* 
 
     this->Timer->StopTimer();
     this->TimeToDraw = this->Timer->GetElapsedTime();
+    cerr << "TimeToDraw: " << this->TimeToDraw << endl;
     this->StoreRenderTime(ren, vol, this->TimeToDraw);
   }
   else

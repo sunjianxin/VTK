@@ -182,7 +182,7 @@ void vtkUnstructuredGridVolumeRayCastMapper::ReleaseGraphicsResources(vtkWindow*
 void vtkUnstructuredGridVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume* vol)
 {
   int i;
-
+  cerr << "in unstructure GVRCM" << endl;
   // Check for input
   if (this->GetInput() == nullptr)
   {
@@ -196,6 +196,7 @@ void vtkUnstructuredGridVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume*
 
   this->Scalars = vtkUnstructuredGridVolumeRayCastMapper::GetScalars(this->GetInput(),
     this->ScalarMode, this->ArrayAccessMode, this->ArrayId, this->ArrayName, this->CellScalars);
+  cerr << "cellFlag: " << this->CellScalars << endl; // 0 for point scalars, 1 for cell scalars, 2 for field scalars
 
   if (this->Scalars == nullptr)
   {
@@ -262,6 +263,7 @@ void vtkUnstructuredGridVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume*
   // the adjusted image sample distance be less than the minimum image sample
   // distance or more than the maximum image sample distance.
   float oldImageSampleDistance = this->ImageSampleDistance;
+  cerr << "imageSampleDistance: " << this->ImageSampleDistance << endl;
   if (this->AutoAdjustSampleDistances)
   {
     float oldTime = this->RetrieveRenderTime(ren, vol);
@@ -459,6 +461,7 @@ void vtkUnstructuredGridVolumeRayCastMapper::Render(vtkRenderer* ren, vtkVolume*
 
     this->Timer->StopTimer();
     this->TimeToDraw = this->Timer->GetElapsedTime();
+    cerr << "TimeToDraw: " << this->TimeToDraw << endl;
     this->StoreRenderTime(ren, vol, this->TimeToDraw);
   }
   else

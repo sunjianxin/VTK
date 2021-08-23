@@ -276,6 +276,7 @@ void vtkOpenGLProjectedTetrahedraMapper::ReleaseGraphicsResources(vtkWindow* win
 //------------------------------------------------------------------------------
 void vtkOpenGLProjectedTetrahedraMapper::Render(vtkRenderer* renderer, vtkVolume* volume)
 {
+  cerr << "in pTetra" << endl;
   vtkOpenGLClearErrorMacro();
   scoped_annotate annotator("PTM::Render");
 
@@ -435,6 +436,7 @@ void vtkOpenGLProjectedTetrahedraMapper::Render(vtkRenderer* renderer, vtkVolume
 
   this->Timer->StopTimer();
   this->TimeToDraw = this->Timer->GetElapsedTime();
+  cerr << "TimeToDraw: " << this->TimeToDraw << endl;
   vtkOpenGLCheckErrorMacro("failed after Render");
 }
 

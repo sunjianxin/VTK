@@ -316,6 +316,14 @@ void vtkRenderWindow::Render()
 
   this->InRender = 0;
   this->InvokeEvent(vtkCommand::EndEvent, nullptr);
+
+  static int rCounter = 0;
+  cerr << "------- " << rCounter << " Frame Done -------" << endl;
+  if (rCounter == 1) {
+      // exit(EXIT_FAILURE);
+  }
+  rCounter++;
+
 }
 
 //------------------------------------------------------------------------------
