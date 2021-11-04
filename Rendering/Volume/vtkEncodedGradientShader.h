@@ -67,7 +67,8 @@ public:
   /**
    * Cause the shading table to be updated
    */
-  void UpdateShadingTable(vtkRenderer* ren, vtkVolume* vol, vtkEncodedGradientEstimator* gradest);
+  // void UpdateShadingTable(vtkRenderer* ren, vtkVolume* vol, vtkEncodedGradientEstimator* gradest);
+  void UpdateShadingTable(vtkRenderer* ren, vtkVolume* vol, vtkEncodedGradientEstimator* gradest, double* _lightDirection, double* _viewDirection, double* _lightAmbientColor, double* _lightDiffuseColor, double* _lightSpecularColor, double& _lightIntensity, double* _material);
 
   ///@{
   /**

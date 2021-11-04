@@ -332,7 +332,6 @@ template <class T>
 void vtkFixedPointCompositeHelperGenerateImageOneSimpleTrilin(T* data, int threadID,
   int threadCount, vtkFixedPointVolumeRayCastMapper* mapper, vtkVolume* vtkNotUsed(vol))
 {
-#if 0
   // cerr << "AAA" << threadID << endl;
   cerr << "Interpolation: Trilinear Interpolation" << endl;
   /* Retrieve MFA reference pointer */ 
@@ -700,7 +699,7 @@ void vtkFixedPointCompositeHelperGenerateImageOneSimpleTrilin(T* data, int threa
       mfa_filecount7 << mfa_counter7;
       mfa_filecount7.close();
   }
-#endif
+
 }
 
 // This method is used when the interpolation type is linear and the data

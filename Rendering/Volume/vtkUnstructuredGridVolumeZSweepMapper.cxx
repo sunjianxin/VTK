@@ -2540,6 +2540,8 @@ void vtkUnstructuredGridVolumeZSweepMapper::SetMaxPixelListSize(int size)
 void vtkUnstructuredGridVolumeZSweepMapper::Render(vtkRenderer* ren, vtkVolume* vol)
 {
   vtkDebugMacro(<< "Render");
+  
+  cerr << "in zsweep" << endl;
 
   // Check for input
   if (this->GetInput() == nullptr)
@@ -3151,8 +3153,11 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
 
   int aborded = 0;
   // for each vertex of the "event list"
+  // cerr << "# of vertices: " << this->EventList->GetNumberOfItems() << endl;
+  int compcount = 0;
   while (this->EventList->GetNumberOfItems() > 0)
   {
+    // cerr << "# of vertices: " << this->EventList->GetNumberOfItems() << endl;
     this->UpdateProgress(static_cast<double>(progressCount) / sum);
 
     aborded = renWin->CheckAbortStatus();
@@ -3163,7 +3168,11 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
     ++progressCount;
     //  the z coordinate of the current vertex defines the "sweep plane".
     vertex = this->EventList->Pop(0, currentZ);
+    // cerr << progressCount << " " << currentZ << endl;
 
+    int ccount = 0;
+    int cccount = 0;
+    // int compcount = 0;
     if (this->UseSet->Vector[vertex] != nullptr)
     { // otherwise the vertex is not useful, basically this is the
       // end we reached the last ztarget
@@ -3174,6 +3183,7 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
 
       if (previousZTarget == currentZ)
       {
+        // cerr << "in first if" << endl;
         // the new vertex is on the same sweep plane than the previous vertex
         // that defined a z target
         // => the z target has to be updated accordingly
@@ -3184,6 +3194,7 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
         // for each face incident with the vertex
         while (it != itEnd)
         {
+          // ccount = 1;
           vtkFace* face = (*it);
           // for each point of the face, get the closest z
           vtkIdType* vids = face->GetFaceIds();
@@ -3212,7 +3223,9 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
       if (currentZ > zTarget)
 #endif
       {
+        // cerr << "in second if" << endl;
         this->CompositeFunction(zTarget);
+        compcount++;
 
         // Update the zTarget
         previousZTarget = zTarget;
@@ -3222,6 +3235,7 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
         // for each cell incident with the vertex
         while (it != itEnd)
         {
+          // ccount++;
           vtkFace* face = (*it);
           // for each point of the face, get the closest z
           vtkIdType* vids = face->GetFaceIds();
@@ -3247,6 +3261,7 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
         if (this->MaxPixelListSizeReached)
         {
           this->CompositeFunction(currentZ);
+          compcount++;
           // We do not update the zTarget in this case.
         }
       }
@@ -3260,9 +3275,11 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
 
       while (it != itEnd)
       {
+        ccount++;
         vtkFace* face = (*it);
         if (!face->GetRendered())
         {
+          cccount++;
           vtkIdType* vids = face->GetFaceIds();
           if (this->CellScalars)
           {
@@ -3306,6 +3323,10 @@ void vtkUnstructuredGridVolumeZSweepMapper::MainLoop(vtkRenderWindow* renWin)
         ++it;
       }
     } // if useset of vertex is not null
+    // if (ccount != cccount) {
+    //   cerr << progressCount << " " << currentZ << " " << ccount << " " << cccount << endl;
+    // }
+    // cerr << progressCount << " " << compcount << endl;
   }   // while(eventList->GetNumberOfItems()>0)
 
   if (!aborded)

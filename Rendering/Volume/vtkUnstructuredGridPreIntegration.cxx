@@ -393,7 +393,9 @@ void vtkUnstructuredGridPreIntegration::Initialize(vtkVolume* volume, vtkDataArr
 void vtkUnstructuredGridPreIntegration::Integrate(vtkDoubleArray* intersectionLengths,
   vtkDataArray* nearIntersections, vtkDataArray* farIntersections, float color[4])
 {
+  // cerr << "In vtkUnstructuredGridPreIntegration" << endl;
   vtkIdType numIntersections = intersectionLengths->GetNumberOfTuples();
+  // cerr << "In numIntersections" << numIntersections << endl; 
 
   for (vtkIdType i = 0; i < numIntersections; i++)
   {

@@ -86,6 +86,7 @@ float* vtkSphericalDirectionEncoder::GetDecodedGradient(int value)
 // a float triple.
 void vtkSphericalDirectionEncoder::InitializeDecodedGradientTable()
 {
+  cerr << "in InitializeDecodedGradientTable" << std::endl;
   if (vtkSphericalDirectionEncoder::DecodedGradientTableInitialized)
   {
     return;

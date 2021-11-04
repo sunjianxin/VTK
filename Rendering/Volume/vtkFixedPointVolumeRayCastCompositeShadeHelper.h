@@ -33,6 +33,9 @@
 #include "vtkFixedPointVolumeRayCastHelper.h"
 #include "vtkRenderingVolumeModule.h" // For export macro
 
+#include "vtkRenderer.h"
+#include "vtkCamera.h"
+
 class vtkFixedPointVolumeRayCastMapper;
 class vtkVolume;
 
@@ -46,6 +49,10 @@ public:
 
   void GenerateImage(int threadID, int threadCount, vtkVolume* vol,
     vtkFixedPointVolumeRayCastMapper* mapper) override;
+  
+  void GenerateImageMfa(int threadID, int threadCount, vtkVolume* vol,
+    vtkFixedPointVolumeRayCastMapper* mapper, vtkRenderer* ren);
+
 
 protected:
   vtkFixedPointVolumeRayCastCompositeShadeHelper();

@@ -510,8 +510,59 @@ inline void vtkUGVRCMLookupCopy(
   }
 }
 
+long int us_mfa_counter0 = 0;
+long int us_mfa_counter1 = 0;
+long int us_mfa_counter2 = 0;
+long int us_mfa_counter3 = 0;
+long int us_mfa_counter4 = 0;
+long int us_mfa_counter5 = 0;
+long int us_mfa_counter6 = 0;
+long int us_mfa_counter7 = 0;
+
+std::ofstream us_info0;
+std::ofstream us_info1;
+std::ofstream us_info2;
+std::ofstream us_info3;
+std::ofstream us_info4;
+std::ofstream us_info5;
+std::ofstream us_info6;
+std::ofstream us_info7;
+
 void vtkUnstructuredGridVolumeRayCastMapper::CastRays(int threadID, int threadCount)
 {
+  if (threadID == 0) {
+    us_mfa_counter0 = 0;
+    us_info0.open("us_info0.txt");
+  }
+  if (threadID == 1) {
+    us_mfa_counter1 = 0;
+    us_info1.open("us_info1.txt");
+  }
+  if (threadID == 2) {
+    us_mfa_counter2 = 0;
+    us_info2.open("us_info2.txt");
+  }
+  if (threadID == 3) {
+    us_mfa_counter3 = 0;
+    us_info3.open("us_info3.txt");
+  }
+  if (threadID == 4) {
+    us_mfa_counter4 = 0;
+    us_info4.open("us_info4.txt");
+  }
+  if (threadID == 5) {
+    us_mfa_counter5 = 0;
+    us_info5.open("us_info5.txt");
+  }
+  if (threadID == 6) {
+    us_mfa_counter6 = 0;
+    us_info6.open("us_info6.txt");
+  }
+  if (threadID == 7) {
+    us_mfa_counter7 = 0;
+    us_info7.open("us_info7.txt");
+  }
+
   int i, j;
   unsigned char* ucptr;
 
@@ -522,6 +573,11 @@ void vtkUnstructuredGridVolumeRayCastMapper::CastRays(int threadID, int threadCo
   vtkDoubleArray* intersectionLengths = this->IntersectionLengthsBuffer[threadID];
   vtkDataArray* nearIntersections = this->NearIntersectionsBuffer[threadID];
   vtkDataArray* farIntersections = this->FarIntersectionsBuffer[threadID];
+
+  if (threadID == 0) {
+      cerr << "ImageInUseSize[1]: " << ImageInUseSize[1] << endl;
+      cerr << "ImageInUseSize[0]: " << ImageInUseSize[0] << endl;
+  }
 
   for (j = 0; j < this->ImageInUseSize[1]; j++)
   {
@@ -577,16 +633,78 @@ void vtkUnstructuredGridVolumeRayCastMapper::CastRays(int threadID, int threadCo
               this->Scalars->GetNumberOfComponents(), numIntersections));
           }
         }
-        else
+        else // on this loop for this->CellScalars = 0
         {
           numIntersections = iterator->GetNextIntersections(
             nullptr, intersectionLengths, this->Scalars, nearIntersections, farIntersections);
         }
+
+        if (threadID == 0) {
+          // cerr << j << "; " << i << "; " << numIntersections << "; " << endl;
+          us_info0 << j << " " << i << " " << numIntersections << "\n";
+        } 
+        if (threadID == 1) {
+          us_info1 << j << " " << i << " " << numIntersections << "\n";
+        }
+        if (threadID == 2) {
+          us_info2 << j << " " << i << " " << numIntersections << "\n";
+        }
+        if (threadID == 3) {
+          us_info3 << j << " " << i << " " << numIntersections << "\n";
+        }
+        if (threadID == 4) {
+          us_info4 << j << " " << i << " " << numIntersections << "\n";
+        }
+        if (threadID == 5) {
+          us_info5 << j << " " << i << " " << numIntersections << "\n";
+        }
+        if (threadID == 6) {
+          us_info6 << j << " " << i << " " << numIntersections << "\n";
+        }
+        if (threadID == 7) {
+          us_info7 << j << " " << i << " " << numIntersections << "\n";
+        }
+
         if (numIntersections < 1)
           break;
+        
+        if (threadID == 0) {
+          // cerr << j << "; " << i << "; " << numIntersections << "; " << endl;
+          // cerr << "intersectionLengths: " << intersectionLengths << "; " << color[3] << endl;
+          // cerr << "nearIntersections: " << nearIntersections << "; " << color[3] << endl;
+          // cerr << "farIntersections: " << farIntersections << "; " << color[3] << endl;
+        }
+        if (threadID == 0) {
+            us_mfa_counter0 += numIntersections;
+        }
+        if (threadID == 1) {
+            us_mfa_counter1 += numIntersections;
+        }
+        if (threadID == 2) {
+            us_mfa_counter2 += numIntersections;
+        }
+        if (threadID == 3) {
+            us_mfa_counter3 += numIntersections;
+        }
+        if (threadID == 4) {
+            us_mfa_counter4 += numIntersections;
+        }
+        if (threadID == 5) {
+            us_mfa_counter5 += numIntersections;
+        }
+        if (threadID == 6) {
+            us_mfa_counter6 += numIntersections;
+        }
+        if (threadID == 7) {
+            us_mfa_counter7 += numIntersections;
+        }
         this->RealRayIntegrator->Integrate(
           intersectionLengths, nearIntersections, farIntersections, color);
+        if (threadID == 0) {
+          // cerr << j << "; " << i << "; " << numIntersections << "; " << color[3] << endl;
+        }
       } while (color[3] < 0.99);
+      // } while (1);
 
       if (color[3] > 0.0)
       {
@@ -620,6 +738,64 @@ void vtkUnstructuredGridVolumeRayCastMapper::CastRays(int threadID, int threadCo
       }
       ucptr += 4;
     }
+  }
+  // cerr << "counter0: " << counter0 << endl;
+  /* Save Time-stamp */ 
+  if (threadID == 0) {
+      std::ofstream mfa_filecount0;
+      mfa_filecount0.open("mfa_count0.txt");
+      mfa_filecount0 << us_mfa_counter0;
+      mfa_filecount0.close();
+      us_info0.close();
+  }
+  if (threadID == 1) {
+      std::ofstream mfa_filecount1;
+      mfa_filecount1.open("mfa_count1.txt");
+      mfa_filecount1 << us_mfa_counter1;
+      mfa_filecount1.close();
+      us_info1.close();
+  }
+  if (threadID == 2) {
+      std::ofstream mfa_filecount2;
+      mfa_filecount2.open("mfa_count2.txt");
+      mfa_filecount2 << us_mfa_counter2;
+      mfa_filecount2.close();
+      us_info2.close();
+  }
+  if (threadID == 3) {
+      std::ofstream mfa_filecount3;
+      mfa_filecount3.open("mfa_count3.txt");
+      mfa_filecount3 << us_mfa_counter3;
+      mfa_filecount3.close();
+      us_info3.close();
+  }
+  if (threadID == 4) {
+      std::ofstream mfa_filecount4;
+      mfa_filecount4.open("mfa_count4.txt");
+      mfa_filecount4 << us_mfa_counter4;
+      mfa_filecount4.close();
+      us_info4.close();
+  }
+  if (threadID == 5) {
+      std::ofstream mfa_filecount5;
+      mfa_filecount5.open("mfa_count5.txt");
+      mfa_filecount5 << us_mfa_counter5;
+      mfa_filecount5.close();
+      us_info5.close();
+  }
+  if (threadID == 6) {
+      std::ofstream mfa_filecount6;
+      mfa_filecount6.open("mfa_count6.txt");
+      mfa_filecount6 << us_mfa_counter6;
+      mfa_filecount6.close();
+      us_info6.close();
+  }
+  if (threadID == 7) {
+      std::ofstream mfa_filecount7;
+      mfa_filecount7.open("mfa_count7.txt");
+      mfa_filecount7 << us_mfa_counter7;
+      mfa_filecount7.close();
+      us_info7.close();
   }
 }
 

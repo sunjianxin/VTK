@@ -257,6 +257,7 @@ public:
   unsigned short* GetScalarOpacityTable(int c) { return this->ScalarOpacityTable[c]; }
   unsigned short* GetGradientOpacityTable(int c) { return this->GradientOpacityTable[c]; }
   vtkVolume* GetVolume() { return this->Volume; }
+  vtkRenderer* GetRenderer() { return this->Ren; }
   unsigned short** GetGradientNormal() { return this->GradientNormal; }
   unsigned char** GetGradientMagnitude() { return this->GradientMagnitude; }
   unsigned short* GetDiffuseShadingTable(int c) { return this->DiffuseShadingTable[c]; }
@@ -452,6 +453,7 @@ protected:
 
   vtkRenderWindow* RenderWindow;
   vtkVolume* Volume;
+  vtkRenderer* Ren;
 
   int ClipRayAgainstVolume(
     double rayStart[3], double rayEnd[3], float rayDirection[3], double bounds[6]);

@@ -192,6 +192,8 @@ void vtkEncodedGradientEstimator::Update()
     encodedSize *= scalarInputSize[1];
     encodedSize *= scalarInputSize[2];
 
+    cerr << "encodedsize: " << encodedSize << endl;
+
     // Allocate space for the encoded normals if necessary
     if (!this->EncodedNormals)
     {

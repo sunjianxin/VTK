@@ -244,6 +244,15 @@
                       (STABLE[3 * normalH + 2] * ((0x4000 + w2Xw2Y * w2Z) >> VTKKW_FP_SHIFT)))) >> \
     VTKKW_FP_SHIFT;                                                                                \
                                                                                                    \
+  /*cerr << "H _trmpDColor: " << _tmpDColor[0] << " " << _tmpDColor[1] << " " << _tmpDColor[2] << endl;*/\
+  COLOR[0] = static_cast<unsigned short>((_tmpDColor[0] * COLOR[0] + 0x7fff) >> VTKKW_FP_SHIFT);   \
+  COLOR[1] = static_cast<unsigned short>((_tmpDColor[1] * COLOR[1] + 0x7fff) >> VTKKW_FP_SHIFT);   \
+  COLOR[2] = static_cast<unsigned short>((_tmpDColor[2] * COLOR[2] + 0x7fff) >> VTKKW_FP_SHIFT);   \
+  COLOR[0] += (_tmpSColor[0] * COLOR[3] + 0x7fff) >> VTKKW_FP_SHIFT;                               \
+  COLOR[1] += (_tmpSColor[1] * COLOR[3] + 0x7fff) >> VTKKW_FP_SHIFT;                               \
+  COLOR[2] += (_tmpSColor[2] * COLOR[3] + 0x7fff) >> VTKKW_FP_SHIFT;
+
+#define VTKKWRCHelper_InterpolateShadingMfa(_tmpDColor, _tmpSColor, COLOR)                         \
   COLOR[0] = static_cast<unsigned short>((_tmpDColor[0] * COLOR[0] + 0x7fff) >> VTKKW_FP_SHIFT);   \
   COLOR[1] = static_cast<unsigned short>((_tmpDColor[1] * COLOR[1] + 0x7fff) >> VTKKW_FP_SHIFT);   \
   COLOR[2] = static_cast<unsigned short>((_tmpDColor[2] * COLOR[2] + 0x7fff) >> VTKKW_FP_SHIFT);   \
@@ -1175,10 +1184,12 @@
       VTKKWRCHelper_InnerInitialization();
 
 #define VTKKWRCHelper_InitializationAndLoopStartShadeTrilin()                                      \
+  /*AAA*/\
   VTKKWRCHelper_InitializeVariables();                                                             \
   VTKKWRCHelper_InitializeVariablesShade();                                                        \
   VTKKWRCHelper_InitializeTrilinVariables();                                                       \
   VTKKWRCHelper_InitializeTrilinVariablesShade();                                                  \
+  /*cerr << "j size: " << imageInUseSize[1];*/\
   for (j = 0; j < imageInUseSize[1]; j++)                                                          \
   {                                                                                                \
     VTKKWRCHelper_OuterInitialization();                                                           \

@@ -75,6 +75,7 @@ void vtkFixedPointVolumeRayCastMapperComputeCS1CGradients(T* dataPtr, int dim[3]
   vtkDirectionEncoder* directionEncoder, int thread_id, int thread_count,
   vtkFixedPointVolumeRayCastMapper* me)
 {
+  cerr << "Computtting Gradientsssss " << endl;
   int x, y, z;
   vtkIdType yinc, zinc;
   int x_start, x_limit;
@@ -340,6 +341,7 @@ void vtkFixedPointVolumeRayCastMapperComputeGradients(T* dataPtr, int dim[3], do
   unsigned char** gradientMagnitude, vtkDirectionEncoder* directionEncoder,
   vtkFixedPointVolumeRayCastMapper* me)
 {
+  cerr << "Computtting Gradientsssss " << endl;
   int x, y, z, c;
   vtkIdType yinc, zinc;
   int x_start, x_limit;
@@ -548,7 +550,14 @@ void vtkFixedPointVolumeRayCastMapperComputeGradients(T* dataPtr, int dim[3], do
 // Construct a new vtkFixedPointVolumeRayCastMapper with default values
 vtkFixedPointVolumeRayCastMapper::vtkFixedPointVolumeRayCastMapper()
 {
-  this->SampleDistance = 1.0;
+  // this->SampleDistance = 1.0;
+  this->SampleDistance = 0.25;
+  // this->SampleDistance = 4.0;
+  // this->SampleDistance = 0.29; // 647663
+  // this->SampleDistance = 0.2925; // 642093.5
+  // this->SampleDistance = 0.295; // 636645
+  // this->SampleDistance = 0.30; // 626003 
+  // this->SampleDistance = 0.29340212134852206;
   this->InteractiveSampleDistance = 2.0;
   this->ImageSampleDistance = 1.0;
   this->MinimumImageSampleDistance = 1.0;
@@ -1136,6 +1145,7 @@ void vtkFixedPointVolumeRayCastMapper::PerVolumeInitialization(vtkRenderer* ren,
 
   this->RenderWindow = ren->GetRenderWindow();
   this->Volume = vol;
+  this->Ren = ren;
 
   // Adjust the sample spacing if necessary
   if (this->LockSampleDistanceToInputSpacing)
@@ -1612,6 +1622,13 @@ void vtkFixedPointVolumeRayCastMapper::CreateCanonicalView(
 void vtkFixedPointVolumeRayCastMapper::ComputeRayInfo(
   int x, int y, unsigned int pos[3], unsigned int dir[3], unsigned int* numSteps)
 {
+  // cerr << "cri" << endl;
+  // cerr << "spacing 0: " << SavedSpacing[0] << endl;
+  // cerr << "spacing 1: " << SavedSpacing[1] << endl;
+  // cerr << "spacing 2: " << SavedSpacing[2] << endl;
+  // SavedSpacing[0] = 1;
+  // SavedSpacing[1] = 1;
+  // SavedSpacing[2] = 1;
   float viewRay[3];
   float rayDirection[3];
   double rayStart[4], rayEnd[4];
@@ -1678,6 +1695,7 @@ void vtkFixedPointVolumeRayCastMapper::ComputeRayInfo(
     worldRayDirection[1] = rayDirection[1] * this->SavedSpacing[1];
     worldRayDirection[2] = rayDirection[2] * this->SavedSpacing[2];
     double worldLength = vtkMath::Normalize(worldRayDirection) / this->SampleDistance;
+    // double worldLength = vtkMath::Normalize(worldRayDirection) / 4;
 
     rayDirection[0] /= worldLength;
     rayDirection[1] /= worldLength;
@@ -1891,6 +1909,12 @@ void vtkFixedPointVolumeRayCastMapper::InitializeRayInfo(vtkVolume* vol)
 
   // Save spacing because for some reason this call is really really slow!
   vtkImageData::SafeDownCast(this->GetInput())->GetSpacing(this->SavedSpacing);
+  // cerr << "spacing 0: " << this->SavedSpacing[0] << endl;
+  // cerr << "spacing 1: " << this->SavedSpacing[1] << endl;
+  // cerr << "spacing 2: " << this->SavedSpacing[2] << endl;
+  cerr << "SampleDistance: " << this->SampleDistance << endl;
+
+
 }
 
 // Return 0 if our volume is outside the view frustum, 1 if it
@@ -2555,6 +2579,7 @@ int vtkFixedPointVolumeRayCastMapper::ClipRayAgainstVolume(
 
 void vtkFixedPointVolumeRayCastMapper::ComputeGradients(vtkVolume* vol)
 {
+  cerr << "Computring Gradient Table now" << endl;
   vtkImageData* input = vtkImageData::SafeDownCast(this->GetInput());
 
   void* dataPtr = this->CurrentScalars->GetVoidPointer(0);
@@ -2567,6 +2592,9 @@ void vtkFixedPointVolumeRayCastMapper::ComputeGradients(vtkVolume* vol)
   double spacing[3];
   input->GetDimensions(dim);
   input->GetSpacing(spacing);
+  cerr << "dim: " << dim[0] << ", " << dim[1] << ", " << dim[2] << endl;
+  cerr << "spacing: " << spacing[0] << ", " << spacing[1] << ", " << spacing[2] << endl;
+  cerr << "Number of gradient slices: " << this->NumberOfGradientSlices << endl;
 
   // Find the scalar range
   double scalarRange[4][2];
@@ -2718,12 +2746,14 @@ int vtkFixedPointVolumeRayCastMapper::UpdateShadingTable(vtkRenderer* ren, vtkVo
 
   // How many components?
   int components = this->CurrentScalars->GetNumberOfComponents();
+  cerr << "components: " << components << endl;
 
   int c;
   for (c = 0; c < ((vol->GetProperty()->GetIndependentComponents()) ? (components) : (1)); c++)
   {
     this->GradientShader->SetActiveComponent(c);
-    this->GradientShader->UpdateShadingTable(ren, vol, this->GradientEstimator);
+    // this->GradientShader->UpdateShadingTable(ren, vol, this->GradientEstimator);
+    this->GradientShader->UpdateShadingTable(ren, vol, this->GradientEstimator, _lightDirection, _viewDirection, _lightAmbientColor, _lightDiffuseColor, _lightSpecularColor, _lightIntensity, _material);
 
     float* r = this->GradientShader->GetRedDiffuseShadingTable(vol);
     float* g = this->GradientShader->GetGreenDiffuseShadingTable(vol);
@@ -2736,6 +2766,7 @@ int vtkFixedPointVolumeRayCastMapper::UpdateShadingTable(vtkRenderer* ren, vtkVo
     unsigned short* tablePtr = this->DiffuseShadingTable[c];
 
     int i;
+    // cerr << "GetNumberOfEncodedDirections: "  << this->DirectionEncoder->GetNumberOfEncodedDirections() << endl; // 65536
     for (i = 0; i < this->DirectionEncoder->GetNumberOfEncodedDirections(); i++)
     {
       *(tablePtr++) = static_cast<unsigned short>((*(rptr++)) * VTKKW_FP_SCALE + 0.5);
