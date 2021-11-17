@@ -825,6 +825,7 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilinMfa(
   TensorProduct<real_t>&  t = mfa_data.tmesh.tensor_prods[0];
   mfa::Decoder<real_t> decoder(mfa_data, 0);
   mfa::FastDecodeInfo<real_t> di(decoder);
+  di.ResizeDers(1);
   mfa::DecodeInfo<real_t> di2(mfa_data, VectorXi::Ones(3));
   /* Retrieve dataset size and update scalar for POS */
   int size =  mapper->GetMfaSize() - 1;
@@ -840,10 +841,13 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilinMfa(
   VectorX<double> out_pt(1);
   VectorX<double> out_pt4(4);
   /* Place holder for getting derivative */
+  real_t          pt_value = 0;
+  VectorX<real_t> gradient(3);
   VectorX<real_t> out_dx(4);       // will store x-derivative at the point
   VectorX<real_t> out_dy(4);       // will store y-deriv…
   VectorX<real_t> out_dz(4);       // will store z-deriv… 
   VectorX<real_t> extents = b->bounds_maxs - b->bounds_mins;                 // for rescaling the derivative
+  real_t          value_extent_recip = 1 / (b->bounds_maxs(3) - b->bounds_mins(3)); // for calculating intensity      
   /* Place holder for getting diffuse and specular coefficients */
   unsigned short diffuseCoefficients[3];
   unsigned short specularCoefficients[3];
@@ -952,18 +956,19 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilinMfa(
     if (threadID == 0) {
         // cerr << "before decoder" << endl;
     }
-    decoder.FastVolPt(param, out_pt, di, t);
+    decoder.FastGrad(param, di, t, gradient, &pt_value);
+    // decoder.FastVolPt(param, out_pt, di, t);
     // b->my_decode_point(param, out_pt4);
     if (threadID == 0) {
         // cerr << "after decoder" << endl;
     }
     /* Normalize value */
-    double v = out_pt[0];
+    // double v = out_pt[0];
     // double v = out_pt[3];
     double ratio;
     double bounds_lower = b->bounds_mins[3];
     double bounds_upper = b->bounds_maxs[3];
-    ratio = (v - bounds_lower)/(bounds_upper - bounds_lower);
+    ratio = (pt_value - bounds_lower) * value_extent_recip;
     if (ratio > 1) {
         ratio = 1;
     }
@@ -1021,17 +1026,22 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilinMfa(
 #if 1
     mfa_before = std::chrono::system_clock::now();
     /* getting normal from MFA */
-    b->differentiate_point_simple(param, 1, 0, -1, out_dx); // first derivative, direction 0
-    b->differentiate_point_simple(param, 1, 1, -1, out_dy); // first derivative, direction 1
-    b->differentiate_point_simple(param, 1, 2, -1, out_dz); // first derivative, direction 2
-    out_dx(3) *= extents(0);
-    out_dy(3) *= extents(1);
-    out_dz(3) *= extents(2);
+    // b->differentiate_point_simple(param, 1, 0, -1, out_dx); // first derivative, direction 0
+    // b->differentiate_point_simple(param, 1, 1, -1, out_dy); // first derivative, direction 1
+    // b->differentiate_point_simple(param, 1, 2, -1, out_dz); // first derivative, direction 2
+    // out_dx(3) *= extents(0);
+    // out_dy(3) *= extents(1);
+    // out_dz(3) *= extents(2);
+    gradient(0) *= extents(0);
+    gradient(1) *= extents(1);
+    gradient(2) *= extents(2);
     // normalize surface normal
-    double norm = sqrt(pow(out_dx(3), 2.0) + pow(out_dy(3), 2.0) + pow(out_dz(3), 2.0));
-    out_dx(3) /= norm;
-    out_dy(3) /= norm;
-    out_dz(3) /= norm;
+    gradient.normalize();
+    // double norm = sqrt(pow(out_dx(3), 2.0) + pow(out_dy(3), 2.0) + pow(out_dz(3), 2.0));
+    // out_dx(3) /= norm;
+    // out_dy(3) /= norm;
+    // out_dz(3) /= norm;
+
     /* getting view direction */
     // ren->GetActiveCamera()->GetPosition(cameraPosition);
     if (threadID == 0) {
@@ -1051,9 +1061,9 @@ void vtkFixedPointCompositeShadeHelperGenerateImageOneSimpleTrilinMfa(
                                    mapper->GetLightSpecularColor(),
                                    mapper->GetLightIntensity(),
                                    mapper->GetMaterial(),
-                                   out_dx(3),
-                                   out_dy(3),
-                                   out_dz(3),
+                                   gradient(0),
+                                   gradient(1),
+                                   gradient(2),
                                    diffuseCoefficients,
                                    specularCoefficients);
     VTKKWRCHelper_InterpolateShadingMfa(diffuseCoefficients, specularCoefficients, tmp); //diffuseShadingTable[0]/specularShadingTable[0] unsigned short pointer, starting address of the shading tables, range:[0, 65535]
